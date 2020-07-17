@@ -1,8 +1,6 @@
 #include <iostream>
 #include <fstream> 
-#include <cstring> 
 #include <string>
-#include <sstream>
 #include <vector>
 
 using namespace std;
@@ -27,10 +25,8 @@ int main(int arg_count, char *args[]) {
         in_M = (string)args[2];
         if (is_number(in_M)) {
             read();
-            //smooth();
-            //write();
-
-
+            smooth();
+            write();
         }
         else cout << "last argument must be natural number";
     }
@@ -45,7 +41,8 @@ int main(int arg_count, char *args[]) {
     return 0;
 }
 
-bool is_number(const std::string& s) //some code from stackoverflow
+//some code from stackoverflow
+bool is_number(const std::string& s)
 {
     std::string::const_iterator it = s.begin();
     while (it != s.end() && std::isdigit(*it)) ++it;
@@ -58,16 +55,41 @@ void read() {
 
     while ( ! fin.eof() )
     {
-    getline (fin, str);
+    getline (fin, str); 
     values.push_back(str);
-    } 
+    }
+    //deleting first non-numeric string from Test.txt
+    values.erase(values.begin(), values.begin()+1); 
 }
 
 void smooth() {
+    int M = stoi(in_M);
+    int window = 2*stoi(in_M) + 1;
+    int n = (int)values.size();
 
+    for (int i = 0; i < n; i++) {
+        double sum_in_M_range = 0;
+
+        for (int j = i-M; j < i+M; j++)
+        {
+            if (j >= 0 && j < n) {
+                sum_in_M_range += stod(values[i]);
+            }
+        }
+        smooth_values.push_back(sum_in_M_range/(double)window);
+        
+    }
+    
 }
 
 void write() {
-
+    ofstream file;
+    file.open("output.txt", ios::out);
+    for (int i = 0; i < (int)smooth_values.size(); i++)
+    {
+        file << to_string(smooth_values[i]);
+        file << "\n";
+    } 
+    file.close();
 }
 
