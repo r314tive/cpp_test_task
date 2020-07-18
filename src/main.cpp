@@ -7,17 +7,15 @@ using namespace std;
 
 
 bool is_number(const std::string& s);
-
 void read();
-
 void write();
-
 void smooth();
 
 vector<string> values;
 vector<double> smooth_values;
 string file;
 string in_M;
+
 
 int main(int arg_count, char *args[]) {
     if (arg_count == 3) {
@@ -41,7 +39,6 @@ int main(int arg_count, char *args[]) {
     return 0;
 }
 
-//some code from stackoverflow
 bool is_number(const std::string& s)
 {
     std::string::const_iterator it = s.begin();
@@ -52,44 +49,52 @@ bool is_number(const std::string& s)
 void read() {
     ifstream fin(file, ios::in);
     string str;
-
-    while ( ! fin.eof() )
-    {
-    getline (fin, str); 
-    values.push_back(str);
+    if (fin.is_open()) {
+        while ( ! fin.eof() )
+        {
+            getline (fin, str); 
+            values.push_back(str);
+        }
     }
+    else cout << "Cannot open file for reading" << endl;
     //deleting first non-numeric string from Test.txt
-    values.erase(values.begin(), values.begin()+1); 
+    //values.erase(values.begin(), values.begin()+1); 
 }
 
 void smooth() {
     int M = stoi(in_M);
     int window = 2*stoi(in_M) + 1;
     int n = (int)values.size();
+    double sum_in_M_range = 0;
+    if (M > 0) {
+        for (int i = 0; i < n; i++) {
+            sum_in_M_range = 0;
 
-    for (int i = 0; i < n; i++) {
-        double sum_in_M_range = 0;
-
-        for (int j = i-M; j < i+M; j++)
-        {
-            if (j >= 0 && j < n) {
-                sum_in_M_range += stod(values[i]);
+            for (int j = i-M; j <= i+M; j++)
+            {
+                if (j >= 0 && j < n) {
+                    sum_in_M_range += stod(values[j]);
+                }
             }
+            smooth_values.push_back(sum_in_M_range/(double)window);
         }
-        smooth_values.push_back(sum_in_M_range/(double)window);
-        
     }
-    
+    else for (int i = 0; i < n; i++) {
+        smooth_values.push_back(stod(values[i]));
+    }
 }
 
 void write() {
     ofstream file;
     file.open("output.txt", ios::out);
-    for (int i = 0; i < (int)smooth_values.size(); i++)
-    {
-        file << to_string(smooth_values[i]);
-        file << "\n";
-    } 
+    if (file.is_open()) {
+        for (int i = 0; i < (int)smooth_values.size(); i++)
+        {
+            file << to_string(smooth_values[i]);
+            file << "\n";
+        } 
+    }
+    else cout << "Cannot open file for writing" << endl;
     file.close();
 }
 
