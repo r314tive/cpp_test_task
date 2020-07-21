@@ -2,19 +2,25 @@
 #include <fstream> 
 #include <string>
 #include <vector>
+#include <numeric>
+
 
 using namespace std;
 
 
 bool is_number(const std::string& s);
+bool is_double(const std::string& s);
 void read();
 void write();
 void smooth();
 
-vector<string> values;
-vector<double> smooth_values;
-string file;
-string in_M;
+
+vector<double> values; // input vector
+vector<double> smooth_values; // output vector
+int n; // the number of vector elements
+
+string file; // directory of the file with data                              (1-st argument)
+string in_M; // variable of M (half of the window from element or radius)    (2-nd argument)
 
 
 int main(int arg_count, char *args[]) {
@@ -46,6 +52,19 @@ bool is_number(const std::string& s)
     return !s.empty() && it == s.end();
 }
 
+bool is_double(const std::string& s)
+{
+    try
+    {
+        std::stod(s);
+    }
+    catch(...) //
+    {
+        return false;
+    }
+    return true;
+}
+
 void read() {
     ifstream fin(file, ios::in);
     string str;
@@ -53,34 +72,51 @@ void read() {
         while ( ! fin.eof() )
         {
             getline (fin, str); 
-            values.push_back(str);
+            
+            //data validation
+            if (is_double(str)) {
+                values.push_back(stod(str));
+            }
         }
+        n = values.size();
     }
     else cout << "Cannot open file for reading" << endl;
-    //deleting first non-numeric string from Test.txt
-    //values.erase(values.begin(), values.begin()+1); 
+    fin.close();
 }
 
 void smooth() {
     int M = stoi(in_M);
-    int window = 2*stoi(in_M) + 1;
-    int n = (int)values.size();
-    double sum_in_M_range = 0;
-    if (M > 0) {
-        for (int i = 0; i < n; i++) {
-            sum_in_M_range = 0;
+    int window = 2*M + 1;
+    double scalar = 1/(double)window;
 
-            for (int j = i-M; j <= i+M; j++)
-            {
-                if (j >= 0 && j < n) {
-                    sum_in_M_range += stod(values[j]);
-                }
-            }
-            smooth_values.push_back(sum_in_M_range/(double)window);
+    double sum_in_M_range;
+    double smooth_value;
+
+    //To compensate for the delay there are loop with dynamically resizing window in the 2-th and 3-th blocks
+    for (int i = 0; i < n; i++) { 
+        sum_in_M_range = 0;
+
+        if (i - M >= 0 && i + M < n) {
+            sum_in_M_range = accumulate(values.begin() + i - M, values.begin() + 1 + i + M, 0.0f);
+            smooth_value = sum_in_M_range * scalar;
+            smooth_values.push_back(smooth_value);
+        }   
+        else if (i - M < 0) {
+            int window_for_ends = window - abs(i-M);
+            double scalar2 = 1/double(window_for_ends);
+
+            sum_in_M_range = accumulate(values.begin(), values.begin() + i + M + 1, 0.0f);
+            smooth_value = sum_in_M_range * scalar2;
+            smooth_values.push_back(smooth_value);
+        }   
+        else if (i + M >= n) {
+            int window_for_ends = window - (i + M - n + 1);
+            double scalar2 = 1/double(window_for_ends);
+
+            sum_in_M_range = accumulate(values.begin() + i - M, values.end(), 0.0f);
+            smooth_value = sum_in_M_range * scalar2;
+            smooth_values.push_back(smooth_value);
         }
-    }
-    else for (int i = 0; i < n; i++) {
-        smooth_values.push_back(stod(values[i]));
     }
 }
 
@@ -88,7 +124,7 @@ void write() {
     ofstream file;
     file.open("output.txt", ios::out);
     if (file.is_open()) {
-        for (int i = 0; i < (int)smooth_values.size(); i++)
+        for (int i = 0; i < n; i++)
         {
             file << to_string(smooth_values[i]);
             file << "\n";
